@@ -1,0 +1,61 @@
+import Control.Monad (guard) 
+import Control.Monad.Trans.Maybe 
+import Control.Monad.Trans.Class (lift) 
+import Data.Functor.Identity (Identity, runIdentity) 
+import Data.Char (isDigit, digitToInt)
+import Data.Maybe (fromJust)
+import qualified Data.Map as Map 
+
+parseInput :: MaybeT IO Int 
+parseInput = do 
+    lift $ putStrLn "type a number" 
+    n <- lift $ getLine 
+    guard (all isDigit n) 
+    return $ sum $ zipWith (*) (iterate (*10) 1) $ 
+        reverse $ map digitToInt n 
+
+type Env = Map.Map Name Val
+type Name = String 
+
+data Exp = Val Integer
+         | Var Name 
+         | Add Exp Exp 
+         | Lam Name Exp
+         | App Exp Exp 
+         deriving (Show)
+
+data Val = IntVal Integer
+         | FunVal Env Name Exp 
+         deriving (Show) 
+
+eval0 :: Env -> Exp -> Val 
+eval0 env (Val i) = IntVal i 
+eval0 env (Var n) = fromJust $ Map.lookup n env
+eval0 env (Add e1 e2) = let v1 = eval0 env e1 
+                            v2 = eval0 env e2 
+                        in case (v1, v2) of 
+                            (IntVal a, IntVal b) -> IntVal (a + b) 
+                            _                    -> v1 
+eval0 env (Lam n exp) = FunVal env n exp 
+eval0 env (App e1 e2) = let v1 = eval0 env e1 
+                            v2 = eval0 env e2 
+                        in case v1 of 
+                            FunVal e n exp -> eval0 (Map.insert n v2 e) exp
+
+
+type Eval1 a = Identity a 
+runEval1 :: Eval1 a -> a 
+runEval1 = runIdentity 
+
+eval1 :: Env -> Exp -> Eval1 Val 
+eval1 env (Val i) = return $ IntVal i 
+eval1 env (Var n) = return $ fromJust $ Map.lookup n env
+eval1 env (Add e1 e2) = do v1 <- eval1 env e1 
+                           v2 <- eval1 env e2 
+                           case (v1, v2) of 
+                              (IntVal a, IntVal b) -> return $ IntVal (a+b)
+eval1 env (Lam n exp) = return $ FunVal env n exp 
+eval1 env (App e1 e2) = do v1 <- eval1 env e1 
+                           v2 <- eval1 env e2 
+                           case v1 of 
+                              FunVal e n exp -> eval1 (Map.insert n v2 e) exp
