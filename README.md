@@ -1,1 +1,1 @@
-repo for blogs and accompanying code. 
+repo for Haskell-related blogs and accompanying code. 
