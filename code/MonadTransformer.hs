@@ -1,6 +1,7 @@
 import Control.Monad (guard) 
 import Control.Monad.Trans.Maybe 
 import Control.Monad.Trans.Class (lift) 
+import Control.Monad.Trans.Except
 import Data.Functor.Identity (Identity, runIdentity) 
 import Data.Char (isDigit, digitToInt)
 import Data.Maybe (fromJust)
@@ -13,6 +14,8 @@ parseInput = do
     guard (all isDigit n) 
     return $ sum $ zipWith (*) (iterate (*10) 1) $ 
         reverse $ map digitToInt n 
+
+exp0 = App (Lam "x" (Add (Var "x") (Var "x"))) (Add (Val 3) (Val 3)) 
 
 type Env = Map.Map Name Val
 type Name = String 
@@ -44,8 +47,8 @@ eval0 env (App e1 e2) = let v1 = eval0 env e1
 
 
 type Eval1 a = Identity a 
-runEval1 :: Eval1 a -> a 
-runEval1 = runIdentity 
+runEval1 :: Exp -> Val
+runEval1 exp = runIdentity $ eval1 Map.empty exp
 
 eval1 :: Env -> Exp -> Eval1 Val 
 eval1 env (Val i) = return $ IntVal i 
@@ -59,3 +62,26 @@ eval1 env (App e1 e2) = do v1 <- eval1 env e1
                            v2 <- eval1 env e2 
                            case v1 of 
                               FunVal e n exp -> eval1 (Map.insert n v2 e) exp
+
+
+type Eval2 a = ExceptT String Identity a 
+runEval2 :: Exp -> Either String Val 
+runEval2 exp = runIdentity $ runExceptT $ eval2 Map.empty exp
+
+
+eval2 :: Env -> Exp -> Eval2 Val
+eval2 env (Val i) = return $ IntVal i 
+eval2 env (Var n) = let v = Map.lookup n env 
+                    in case v of 
+                        Just v' -> return v' 
+                        _       -> throwE $ "variable " ++ n ++ " is not in scope"
+eval2 env (Add e1 e2) = do v2 <- eval2 env e1 
+                           v2 <- eval2 env e2 
+                           case (v2, v2) of 
+                              (IntVal a, IntVal b) -> return $ IntVal (a+b)
+eval2 env (Lam n exp) = return $ FunVal env n exp 
+eval2 env (App e1 e2) = do v1 <- eval2 env e1 
+                           v2 <- eval2 env e2 
+                           case v1 of 
+                              FunVal e n exp -> eval2 (Map.insert n v2 e) exp
+
