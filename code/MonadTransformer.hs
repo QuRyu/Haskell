@@ -74,14 +74,19 @@ eval2 env (Val i) = return $ IntVal i
 eval2 env (Var n) = let v = Map.lookup n env 
                     in case v of 
                         Just v' -> return v' 
-                        _       -> throwE $ "variable " ++ n ++ " is not in scope"
+                        _       -> throwE $ "Rariable " ++ n ++ " is not in scope"
 eval2 env (Add e1 e2) = do v2 <- eval2 env e1 
                            v2 <- eval2 env e2 
                            case (v2, v2) of 
                               (IntVal a, IntVal b) -> return $ IntVal (a+b)
+                              _                    -> throwE $ "Expression \"add " ++ show e1 
+                                                                ++ " " ++ show e2 ++ "\" is wrong"
 eval2 env (Lam n exp) = return $ FunVal env n exp 
 eval2 env (App e1 e2) = do v1 <- eval2 env e1 
                            v2 <- eval2 env e2 
                            case v1 of 
                               FunVal e n exp -> eval2 (Map.insert n v2 e) exp
+                              _              -> throwE $ "Expression \"" ++ show e1 ++ "is not a lambda"
+                                                            ++ " expression"
+
 
