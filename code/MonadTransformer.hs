@@ -2,6 +2,7 @@ import Control.Monad (guard)
 import Control.Monad.Trans.Maybe 
 import Control.Monad.Trans.Class (lift) 
 import Control.Monad.Trans.Except
+import Control.Monad.Trans.Reader 
 import Data.Functor.Identity (Identity, runIdentity) 
 import Data.Char (isDigit, digitToInt)
 import Data.Maybe (fromJust)
@@ -16,6 +17,7 @@ parseInput = do
         reverse $ map digitToInt n 
 
 exp0 = App (Lam "x" (Add (Var "x") (Var "x"))) (Add (Val 3) (Val 3)) 
+exp1 = Add (Val 1) (Var "i")
 
 type Env = Map.Map Name Val
 type Name = String 
@@ -71,11 +73,10 @@ runEval2 exp = runIdentity $ runExceptT $ eval2 Map.empty exp
 
 eval2 :: Env -> Exp -> Eval2 Val
 eval2 env (Val i) = return $ IntVal i 
-eval2 env (Var n) = let v = Map.lookup n env 
-                    in case v of 
+eval2 env (Var n) = case Map.lookup n env of 
                         Just v' -> return v' 
-                        _       -> throwE $ "Rariable " ++ n ++ " is not in scope"
-eval2 env (Add e1 e2) = do v2 <- eval2 env e1 
+                        _       -> throwE $ "Variable " ++ n ++ " is not in scope"
+eval2 env (Add e1 e2) = do v1 <- eval2 env e1 
                            v2 <- eval2 env e2 
                            case (v2, v2) of 
                               (IntVal a, IntVal b) -> return $ IntVal (a+b)
@@ -87,6 +88,32 @@ eval2 env (App e1 e2) = do v1 <- eval2 env e1
                            case v1 of 
                               FunVal e n exp -> eval2 (Map.insert n v2 e) exp
                               _              -> throwE $ "Expression \"" ++ show e1 ++ "is not a lambda"
+                                                            ++ " expression"
+
+type Eval3 a = ReaderT Env (ExceptT String Identity) a 
+runEval3 :: Exp -> Either String Val 
+runEval3 exp = runIdentity $ runExceptT $ runReaderT (eval3 exp) Map.empty 
+
+eval3 :: Exp -> Eval3 Val 
+eval3 (Val i)     = return $ IntVal i 
+eval3 (Var n)     = asks (Map.lookup n) >>= \v' -> 
+                    case v' of 
+                        Just v' -> return v' 
+                        _       -> lift $ throwE $ "Variable " ++ n ++ " is not in scope"
+eval3 (Add e1 e2) = do v1 <- eval3 e1 
+                       v2 <- eval3 e2 
+                       case (v2, v2) of 
+                              (IntVal a, IntVal b) -> return $ IntVal (a+b)
+                              _                    -> lift $ throwE $ "Expression \"add " ++ show e1 
+                                                                ++ " " ++ show e2 ++ "\" is wrong"
+eval3 (Lam n exp) = do env <- ask 
+                       return $ FunVal env n exp 
+
+eval3 (App e1 e2) = do v1 <- eval3 e1 
+                       v2 <- eval3 e2 
+                       case v1 of 
+                              FunVal e n exp -> local (Map.insert n v2) (eval3 exp) 
+                              _              -> lift $ throwE $ "Expression \"" ++ show e1 ++ "is not a lambda"
                                                             ++ " expression"
 
 
