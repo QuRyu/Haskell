@@ -30,7 +30,7 @@ hi! abc
 abc 
 ```
 
-`ask`的作用类似于State的`get`，而`local`则类似于`put`。这两个函数签名如下：
+`ask`的作用类似于State的`get`，而`local`则是在取得环境变量后进行修改。但是不可把`local`和`put`作类比，因为`local`并不能修改下一个`ask`函数所获得的值。无论怎样调用`local`，Reader Monad所传递的环境变量都是不会改变的。这两个函数签名如下：
 
 ```haskell
 ask :: Reader r r   
@@ -39,7 +39,7 @@ local :: (r -> r) -> Reader r a -> Reader r a
 
 
 
-从上述例子中可以看到，即使调用了`local`方法，但是每次从环境中(也就是Reader签名中的`e`)获取的变量都不会改变。所以，Reader的作用大致可以理解为：提供给一个或多个绑定在一起的计算相同的输入值。
+Reader的作用大致可以理解为：提供给一个或多个绑定在一起的计算相同的输入值。
 
 
 
