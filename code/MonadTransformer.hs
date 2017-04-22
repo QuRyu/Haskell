@@ -3,6 +3,8 @@ import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Class (lift) 
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader 
+import Control.Monad.Trans.State (StateT, runStateT) 
+import Control.Monad.State.Class (modify, MonadState, put, get) 
 import Data.Functor.Identity (Identity, runIdentity) 
 import Data.Char (isDigit, digitToInt)
 import Data.Maybe (fromJust)
@@ -116,4 +118,37 @@ eval3 (App e1 e2) = do v1 <- eval3 e1
                               _              -> lift $ throwE $ "Expression \"" ++ show e1 ++ "is not a lambda"
                                                             ++ " expression"
 
+
+type Eval4 a = ReaderT Env (ExceptT String (StateT Integer Identity)) a 
+runEval4 :: Exp -> (Either String Val, Integer)  
+runEval4 exp = runIdentity $
+    runStateT (runExceptT $ runReaderT (eval4 exp)  Map.empty) 0 
+
+tick :: (MonadState s m, Num s) => m ()
+tick = get >>= (put . (+1))
+
+
+eval4 :: Exp -> Eval4 Val 
+eval4 (Val i) = return $ IntVal i 
+eval4 (Var n)     = asks (Map.lookup n) >>= \v' -> 
+                    case v' of 
+                        Just v' -> return v' 
+                        _       -> lift $ throwE $ "Variable " ++ n ++ " is not in scope"
+eval4 (Add e1 e2) = do v1 <- eval4 e1 
+                       v2 <- eval4 e2 
+                       tick 
+                       case (v2, v2) of 
+                              (IntVal a, IntVal b) -> return $ IntVal (a+b)
+                              _                    -> lift $ throwE $ "Expression \"add " ++ show e1 
+                                                                ++ " " ++ show e2 ++ "\" is wrong"
+eval4 (Lam n exp) = do env <- ask 
+                       return $ FunVal env n exp 
+
+eval4 (App e1 e2) = do v1 <- eval4 e1 
+                       v2 <- eval4 e2 
+                       tick
+                       case v1 of 
+                              FunVal e n exp -> local (Map.insert n v2) (eval4 exp) 
+                              _              -> lift $ throwE $ "Expression \"" ++ show e1 ++ "is not a lambda"
+                                                            ++ " expression"
 
