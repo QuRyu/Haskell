@@ -4,6 +4,7 @@ import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader 
 import Control.Monad.Trans.State (StateT, runStateT) 
+import Control.Monad.Except (MonadError) 
 import Control.Monad.State.Class (modify, MonadState, put, get) 
 import Data.Functor.Identity (Identity, runIdentity) 
 import Data.Char (isDigit, digitToInt)
