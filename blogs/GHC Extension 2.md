@@ -1,22 +1,20 @@
-这篇是[24 Days of GHC Extension](https://ocharles.org.uk/blog/pages/2014-12-01-24-days-of-ghc-extensions.html)的翻译。
-
-
+GHC扩展第一篇。
 
 # View Patterns 
 
-### Basic Usage
+### 基本语法
 
-View patterns allow us to match against the result of function call directly, without the need for “case of”.
+在Haskell中，尽管用户可以使用`case of`关键词来匹配函数调用的结果，但这样做会让代码显得比较丑陋，而我们更希望的是能够使用多个函数而不是`case of`匹配结果。
 
-For example, the following code:
+比如，如下的代码中，我们使用了`case of `关键词来匹配`Map.lookup`函数返回的结果并返回相应的值。
 
-​    lookupMap :: String -> Map.Map String Int -> Int 
+```haskell
+lookupMap :: String -> Map.Map String Int -> Int 
 
-​    lookup k map = case Map.lookup k map of 
-
-​            Just n    -> n 
-
-​            Nothing -> 0
+lookup k map = case Map.lookup k map of 
+					Just n    -> n 
+					Nothing -> 0
+```
 
 could be converted into:
 
