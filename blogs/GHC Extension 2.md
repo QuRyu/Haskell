@@ -4,7 +4,7 @@ GHC扩展第一篇。
 
 ### 基本语法
 
-在Haskell中，尽管用户可以使用`case of`关键词来匹配函数调用的结果，但这样做会让代码显得比较丑陋，而我们更希望的是能够使用多个函数而不是`case of`匹配结果。
+在Haskell中，尽管用户可以使用`case of`关键词来匹配函数调用的结果，但这样写出来的代码不够简洁。
 
 比如，如下的代码中，我们使用了`case of `关键词来匹配`Map.lookup`函数返回的结果并返回相应的值。
 
@@ -16,13 +16,17 @@ lookup k map = case Map.lookup k map of
 					Nothing -> 0
 ```
 
-could be converted into:
+而View Pattern的作用即在于让我们直接匹配函数调用的结果。上面例子中的代码可以转换成：
 
-​    lookupMap :: String -> Map.map String Int -> Int 
+```haskell
+lookupMap :: String -> Map.map String Int -> Int 
 
-​    lookupMap s (Map.lookup s -> Just n) = n 
+lookupMap s (Map.lookup s -> Just n) = n 
 
-​    lookupMap _  _                                      = 0 
+lookupMap _  						 = 0 
+```
+
+View Pattern的关键字是`->`。通过使用这个扩展，可以写出多个函数直接匹配结果的代码，相比前一个例子中的代码清爽了很多。
 
 ### View Patterns as Abstraction Tool 
 
