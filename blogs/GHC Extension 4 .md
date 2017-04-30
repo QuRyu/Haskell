@@ -65,6 +65,45 @@ instance ToJSON Worker where
 
 正如例子中所示，只需要将`w`替换为`Worker{..}`，也就是`数据类型+{..}`，就可以直接调用其accessor function，而不需要在其后加上变量，来获得Worker内部的数据了。
 
+上述功能便是RecordWildCards所能提供的全部了。尽管这个功能可以说是微不足道的，但它还能发挥一些意想不到的作用。
+
+
+
+### 使用RecordWildCards管理imports 
+
+在每一个文件内，都要在开头写上各种的imports来引入其他的模块(module)。而如果遇到了有包含相同函数名的两个模块，则常常会使用`import qualified … as …`来避免名称的冲突。比如同时使用`Data.ByteString`和`Data.ByteString.Lazy`，通常会将将其引用分别限制为`S`和`L`。
+
+但这样带来的不便则是每调用一个名称有冲突的函数，都需要在前面写上`S`或`L`。但RecordWildCards为我们提供了不需要使用限制名称的方法。
+
+
+
+假设我现在想分别使用`Data.ByteString` 和`Data.ByteString.Lazy`中的方法。
+```haskell
+import qualified Data.ByteString as S 
+import qualified Data.ByteString.Lazy as L 
+```
+但和以往直接使用`S.<function>`不同的是，我们先定义一个数据类型，其中包含了每一种我们可能会用到的方法。
+```haskell
+data StringModule s = String
+  { map :: (Word8 -> Word8) -> s -> s
+  , concatMap :: (Word8 -> s) -> s -> s
+  , filter :: (Word8 -> Bool) -> s -> s
+  , length :: s -> Int
+  , singleton :: Word8 -> s
+  , null :: s -> Bool
+  , pack :: [Word8] -> s
+  , unpack :: s -> [Word8]
+  , empty :: s
+  , readFile :: FilePath -> IO s
+  , writeFile :: FilePath -> s -> IO ()
+  , break :: (Word8 -> Bool) -> s -> (s, s)
+  , span :: (Word8 -> Bool) -> s -> (s, s)
+  , dropWhile :: (Word8 -> Bool) -> s -> s
+  , takeWhile :: (Word8 -> Bool) -> s -> s
+  , any :: (Word8 -> Bool) -> s -> Bool
+  , all :: (Word8 -> Bool) -> s -> Bool
+  , splitAt :: Int -> s -> (s, s)
+  }
 
 
 todo: use RecordWildCards to create data type 
