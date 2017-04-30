@@ -82,6 +82,7 @@ instance ToJSON Worker where
 import qualified Data.ByteString as S 
 import qualified Data.ByteString.Lazy as L 
 ```
+
 但和以往直接使用`S.<function>`不同的是，我们先定义一个数据类型，其中包含了每一种我们可能会用到的方法。
 ```haskell
 data StringModule s = String
@@ -104,10 +105,36 @@ data StringModule s = String
   , all :: (Word8 -> Bool) -> s -> Bool
   , splitAt :: Int -> s -> (s, s)
   }
+```
+
+然后，在同一个文件中，我们创建两个类型为StringModule的数据。
+```haskell
+lazyByteString :: StringModule 
+lazyByteString = String 
+  { map       = L.map
+  , concatMap = L.concatMap
+  , ...
+  }
+    
+strictByteString = StringModule 
+  { map       = S.map 
+  , concatMap = S.concatMap
+  , ...
+  }
+
+```
+
+那这样有什么好处呢？
+在定义完后，我们想使用其中一个模块下的方法时，可以借助RecordWildCards消除限定名称的使用
+```haskell
+zot :: (a, b) 
+zot = (a, b) where 
+    a = pack [1, 2, 3] where String{..} = lazyByteString
+    b = pack [1, 2, 3] where String{..} = strictByteString 
+```
+在这里，尽管我们调用了两个模块的相同名称方法，但并不会引起冲突，并且省去了限定词`L`、`S`的麻烦。
 
 
-todo: use RecordWildCards to create data type 
 
-todo: advanced usage of RecordWildCards (manage module imports)
-
-
+###总结
+RecordWildCards是GHC扩展中的一个小巧、方便的拓展，能达到简化代码的目的。
