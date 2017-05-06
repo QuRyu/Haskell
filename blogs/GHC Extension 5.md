@@ -19,17 +19,32 @@ BangPatterns能让Haskell的求值方式变为惰性求值(lazy evaluation)变�
 
 
 ```haskell
-plain :: Int -> Boolean 
+plain :: Int -> Bool 
 plain n = True 
 ```
 
-在这个例子中，
+尽管参数`n :: Int`被传给了`plain`，但因为`plain`没有使用这个值，Haskell便不会求出n的值。
+
+```haskell
+ghci> plain undefined
+True 
+```
+
+也就是说，即使传入了`undefined`，也是不会报错的，因为参数没有被匹配。
 
 
 
-todo: Haskell laziness 
+```haskell
+negate' :: Bool -> a -> Bool
+negate' True  a = False 
+negate' False a = True
+```
+
+对于`negate'`函数来说，Haskell一定会求出第一个参数的值，但会原封不动的保留第二个参数。
 
 
 
-todo: list example using BangPatterns and its desugar version
+### BangPatterns的使用场景
+
+todo: foldl example using BangPatterns (why strict) and its desugar version
 
