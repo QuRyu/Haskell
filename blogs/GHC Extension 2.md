@@ -1,5 +1,7 @@
 GHC扩展第一篇。
 
+comment: View Patterns 只能匹配函数结果。但非函数结果也不用匹配啊hhhhh
+
 # View Patterns 
 
 ### 基本语法
@@ -48,4 +50,4 @@ So we can implement the last operation as:
 
 ​    last _                                  = Nothing 
 
-GHC will do the exhaustive check for us so we don’t need to worry about failing to check against a special case. 
+GHC will do the exhaustive check for us so we don’t need to worry about failing to check against a special case. c

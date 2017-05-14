@@ -154,4 +154,4 @@ eval4 (App e1 e2) = do v1 <- eval4 e1
                               FunVal e n exp -> local (Map.insert n v2) (eval4 exp) 
                               _              -> lift $ throwE $ "Expression \"" ++ show e1 ++ "is not a lambda"
                                                             ++ " expression"
-
+main = do putStrLn "hello"
