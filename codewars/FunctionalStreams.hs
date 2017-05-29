@@ -13,7 +13,7 @@ repeatS :: a -> Stream a
 repeatS a = a :> repeatS a 
 
 iterateS :: (a -> a) -> a -> Stream a 
-iterateS f a = repeatS $ f a 
+iterateS f a = a :> iterateS f (f a) 
 
 cycleS :: [a] -> Stream a 
 cycleS xs = go xs 
@@ -21,10 +21,10 @@ cycleS xs = go xs
           go (a:as) = a :> go as
 
 fromS :: Num a => a -> Stream a 
-fromS n = n :> fromS (n+1)  
+fromS n = fromStepS n 1 
     
 fromStepS :: Num a => a -> a -> Stream a 
-fromStepS x s = undefined 
+fromStepS x s = x :> fromStepS (x+s) s 
 
 foldrS :: (a -> b -> b) -> Stream a -> b 
 foldrS f (x :> xs) = x `f` foldrS f xs 
@@ -34,11 +34,13 @@ filterS p (x :> xs) = if p x then x :> filterS p xs else filterS p xs
                      
 takeS :: Int -> Stream a -> [a] 
 takeS 0 _         = []
-takeS n (x :> xs) = x : takeS (n-1) xs
+takeS n (x :> xs) = if n > 0 then x : takeS (n-1) xs
+                             else [] 
 
 dropS :: Int -> Stream a -> Stream a 
 dropS 0 stream    =  stream 
-dropS n (x :> xs) = dropS (n-1) xs 
+dropS n (x :> xs) = if n > 0 then dropS (n-1) xs 
+                             else x :> xs 
 
 splitAtS :: Int -> Stream a -> ([a], Stream a)
 splitAtS 0 stream = ([], stream) 
@@ -55,26 +57,20 @@ instance Applicative Stream where
     pure = repeatS 
     (f :> fs) <*> (x :> xs) = f x :> (fs <*> xs) 
 
-scanlS :: (b -> a -> b) -> b -> Stream a -> Stream b 
-scanlS              = go 
-    where 
-      go :: (b -> a -> b) -> b -> Stream a -> Stream b 
-      go f acc (x :> xs) = acc :> go f (f acc x) xs 
-
 fibS :: Stream Integer 
-fibS = scanlS (+) 0 $ 1 :> 1 :> fibS 
+fibS = 0 :> fib 
+    where fib = 1 :> 1 :> zipWithS (+) fib (tailS fib)
 
 primeS :: Stream Integer 
-primeS = filterS isPrime (fromS 2)
-    where 
-      isPrime :: Integer -> Bool 
-      isPrime n = foldr (\num cond -> 
-                                case cond of 
-                                    False -> False 
-                                    True  -> n `mod` num /= 0)
-                                   True [2..n] 
+primeS = filterS isPrime $ iterateS (+1) 2 
 
-sample = 1 :> (2 :> 3 :> Nil)
-stream1 = repeatS 1 
+
+isPrime :: Integer -> Bool 
+isPrime n = null [ x | x <- [2..n-1], n `mod` x == 0]
+                                   
+
+
+zipS :: Stream a -> Stream b -> Stream (a, b)
+zipS = zipWithS (,)
 
 
