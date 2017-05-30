@@ -1,4 +1,5 @@
 import Prelude hiding (reverse)
+import qualified Data.Set as PQ
 
 infixr :> 
 data Stream a = a :> Stream a | Nil 
@@ -62,11 +63,34 @@ fibS = 0 :> fib
     where fib = 1 :> 1 :> zipWithS (+) fib (tailS fib)
 
 primeS :: Stream Integer 
-primeS = filterS isPrime $ iterateS (+1) 2 
+primeS = cycleS primes 
+
+primes :: [Integer] 
+primes = 2 : sieve [3, 5..]
+    where 
+      sieve (x:xs) = x : sieve' xs (insertPrime x xs PQ.empty) 
+
+      sieve' (x:xs) table 
+          | nextComposite == x = sieve' xs (adjust x table) 
+          | otherwise          = x : sieve' xs (insertPrime x xs table) 
+          where 
+            (nextComposite, _) = PQ.findMin table 
+
+      adjust x table 
+          | n == x    = adjust x (PQ.insert (n', ns) newPQ)
+          | otherwise = table 
+        where 
+          Just ((n, n':ns), newPQ) = PQ.minView table 
+
+      insertPrime p xs = PQ.insert (p*p, map (*p) xs)
 
 
 isPrime :: Integer -> Bool 
-isPrime n = null [ x | x <- [2..n-1], n `mod` x == 0]
+isPrime n = null [ x | x <- [2..bound], n `mod` x == 0]
+    where 
+      bound :: Integer 
+      bound = ceiling . sqrt $ fromIntegral n 
+
                                    
 
 
